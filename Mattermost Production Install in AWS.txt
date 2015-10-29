@@ -1,0 +1,221 @@
+=====Mattermost Chat Server=====
+Ubuntu 14.04 Server with 3 EBS volumes 
+1 root volume, any size above 30GB
+1 encrypted 500GB volume for postgresql data
+1 encrypted 500GB volume for Mattermost data
+Encryption is optional.
+
+I used an instance size of m4.large. We have 8 users, and the server is very under utilized.
+===Preparation===
+mattermost v1.0 install guide
+
+  sudo apt-get update
+  sudo apt-get upgrade
+
+Pre warm 2 volumes of 500GB (will take a few hours) 
+more info on this - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-initialize.html
+   Replace xvdb and xvdc with your own names that you have on the volumes.
+   
+   You can check with this command:
+   lsblk
+These "dd" commands will lock your terminal from typing anything, I suggest using nohup or screen.
+   sudo dd if=/dev/zero of=/dev/xvdb bs=1M
+   sudo dd if=/dev/zero of=/dev/xvdc bs=1M
+Create the file system
+  sudo mkfs -t ext4 /dev/xvdb
+  sudo mkfs -t ext4 /dev/xvdc
+Mount it
+   sudo mkdir /mattermost
+
+
+   sudo mount /dev/xvdb /opt
+   sudo mount /dev/xvdc /mattermost
+   sudo cp /etc/fstab /etc/fstab.orig
+
+Edit the /etc/fstab file
+
+   sudo nano /etc/fstab
+   /dev/xvdb       /opt   ext4    defaults,nofail        0       2
+   /dev/xvdc       /mattermost   ext4    defaults,nofail        0       2
+
+Check if the syntax is correct
+   sudo mount -a
+
+===PostgreSQL Install===
+
+Install PostgreSQL 9.3+
+   sudo apt-get install postgresql postgresql-contrib
+Edit config file to change DB location
+   sudo nano /etc/postgresql/9.3/main/postgresql.conf 
+        change this in the file -  data_directory = '/opt/postgresql'	
+
+   sudo chown -R postgres:postgres /opt/postgresql
+   sudo chmod 0700 /opt/postgresql
+   sudo service postgresql restart
+
+
+
+PostgreSQL created a user account called postgres. You will need to log into that account with:
+   sudo -i -u postgres
+   /usr/lib/postgresql/9.3/bin/initdb -D /opt/postgresql
+You can get a PostgreSQL prompt by typing:
+   psql
+Create the Mattermost database by typing:
+   CREATE DATABASE mattermost;
+Create the Mattermost user by typing:
+   CREATE USER mmuser WITH PASSWORD 'mmuser_password';
+Grant the user access to the Mattermost database by typing:
+   GRANT ALL PRIVILEGES ON DATABASE mattermost to mmuser;
+You can exit out of PostgreSQL by typing:
+   \q
+You can exit the postgres account by typing:
+   exit
+===Mattermost Install===
+Download the latest Mattermost Server by typing:
+   cd /home/ubuntu
+   mkdir mattermost
+   Make sure to download the latest release - wget https://github.com/mattermost/platform/releases/download/v1.0.0/mattermost.tar.gz
+Unzip the Mattermost Server by typing:
+   tar -xvzf mattermost.tar.gz
+For the sake of making this guide simple we located the files at /home/ubuntu/mattermost
+
+We have also elected to run the Mattermost Server as the ubuntu account for simplicity. We recommend settings up and running the service under a mattermost user account with limited permissions.
+Create the storage directory for files. We assume you will have attached a large drive for storage of images and files. For this setup we will assume the directory is located at /mattermost/data.
+Create the directory by typing:
+   sudo mkdir -p /mattermost/data
+Set the ubuntu account as the directory owner by typing:
+   sudo chown -R ubuntu /mattermost
+Configure Mattermost Server by editing the config.json file at /home/ubuntu/mattermost/config`
+   cd ~/mattermost/config
+Edit the file by typing:
+   nano config.json
+   replace DriverName": "mysql" with DriverName": "postgres"
+   replace "DataSource": "mmuser:mostest@tcp(dockerhost:3306)/mattermost_test?charset=utf8mb4
+   with
+   "DataSource": "postgres://mmuser:mmuser_password@10.10.10.1:5432/mattermost?sslmode=disable&connect_timeout=10"
+
+Test the Mattermost Server
+   cd ~/mattermost/bin
+Run the Mattermost Server by typing:
+   ./platform
+You should see a console log like Server is listening on :8065 letting you know the service is running.
+Stop the server for now by typing ctrl-c
+Setup Mattermost to use the Ubuntu Upstart daemon which handles supervision of the Mattermost process.
+   sudo touch /etc/init/mattermost.conf
+   sudo nano /etc/init/mattermost.conf
+Copy the following lines into /etc/init/mattermost.conf
+   start on runlevel [2345]
+   stop on runlevel [016]
+   respawn
+   chdir /home/ubuntu/mattermost
+   setuid ubuntu
+   exec bin/platform
+You can manage the process by typing:
+   sudo start mattermost
+Verify the service is running by typing:
+   curl http://127.0.0.1:8065
+You should see a page titles Mattermost
+You can also stop the process by running the command sudo stop mattermost, but we will skip this step for now.
+
+===NGINX Install===
+Install Nginx on Ubuntu with
+   sudo apt-get install nginx nodejs npm
+   ln -s /usr/bin/nodejs /usr/local/bin/node
+   sudo npm install ws
+You can manage Nginx with the following commands
+   sudo service nginx stop
+   sudo service nginx start
+   sudo service nginx restart
+Map a FQDN (fully qualified domain name) like mattermost.example.com to point to the Nginx server.
+Configure Nginx to proxy connections from the internet to the Mattermost Server
+Create a configuration for Mattermost
+   sudo touch /etc/nginx/sites-available/mattermost
+Below is a sample configuration with the minimum settings required to configure Mattermost.
+Remove the existing file with
+   sudo rm /etc/nginx/sites-enabled/default
+Link the mattermost config by typing:
+   sudo ln -s /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost
+You will need a SSL cert from a certificate authority.
+For simplicity we will generate a test certificate.
+   mkdir ~/cert
+   cd ~/cert
+   sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mattermost.key -out mattermost.crt
+Input the following info
+    Country Name (2 letter code) [AU]:US
+    State or Province Name (full name) [Some-State]:California
+    Locality Name (eg, city) []:Los Angeles
+    Organization Name (eg, company) [Internet Widgits Pty Ltd]:Guides
+    Organizational Unit Name (eg, section) []:
+    Common Name (e.g. server FQDN or YOUR name) []:mattermost.example.com
+    Email Address []:admin@mattermost.example.com
+Edit nginx config
+
+This config can be changed, I copied bits and pieces of it from a lot of places.
+I couldn't get HTTPS to work with the Mattermost's provided Nginx config so I had to make this one.
+If your good with Nginx please don't hesitate to send me info if there are ways to make this better.
+   sudo nano /etc/nginx/sites-available/mattermost
+
+Paste this in and edit "example.com" to your server's address
+upstream mattermost_proxy {
+  server 127.0.0.1:8065;
+}
+
+server {
+    listen 80;
+    server_name example.com;
+    rewrite ^/(.*) https://example.com/$1 permanent;
+}
+
+server {
+  listen       443;
+  server_name  example.com;
+
+  ssl on;
+  ssl_certificate      /home/ubuntu/cert/example.chained.crt;
+  ssl_certificate_key  /home/ubuntu/cert/example.com.key;
+
+  ssl_session_cache shared:SSL:1m;
+  ssl_session_timeout  5m;
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+  location / {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+    proxy_pass http://mattermost_proxy;
+  }
+  location /api/v1/websocket {
+    proxy_pass http://mattermost_proxy;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+
+  client_max_body_size 4G;
+  keepalive_timeout 10;
+}
+</code>
+
+Restart Nginx by typing:
+   sudo service nginx restart
+
+===FINAL STEPS===
+
+Navigate to https://mattermost.example.com and create a team and user.
+The first user in the system is automatically granted the system_admin role, which gives you access to the System Console.
+
+From the town-square channel click the dropdown and choose the System Console option
+
+Update File Settings
+
+   Change Local Directory Location from ./data/ to /mattermost/data
+
+Update Log Settings
+   Set Log to The Console to false
+Update Rate Limit Settings
+   Set Vary By Remote Address to false
+   Set Vary By HTTP Header to X-Real-IP
+Feel free to modify other settings.
+Restart the Mattermost Service by typing:
+   sudo restart mattermost
