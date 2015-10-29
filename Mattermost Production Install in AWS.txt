@@ -1,8 +1,8 @@
 =====Mattermost Chat Server=====
 Ubuntu 14.04 Server with 3 EBS volumes 
-1 root volume, any size above 30GB
-1 encrypted 500GB volume for postgresql data
-1 encrypted 500GB volume for Mattermost data
+1 root volume, any size above 30GB (or how much data you think you need)
+1 encrypted 500GB volume for postgresql data (or how much data you think you need)
+1 encrypted 500GB volume for Mattermost data (or how much data you think you need)
 Encryption is optional.
 
 I used an instance size of m4.large. We have 8 users, and the server is very under utilized.
