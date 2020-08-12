@@ -30,7 +30,7 @@ Table of Contents
    * [4. Lockdown SSH Access (highly recommended but not required)](#4-lockdown-ssh-accesshighly-recommended-but-not-required)
    * [5. Install PiHole](#5-install-pihole)
 
-Missing steps in guide, coming soon
+## What you need before you start
 
 1. Raspberry Pi (any model)
 1. Good power cable
