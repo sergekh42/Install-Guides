@@ -10,6 +10,7 @@ Need to add these to the guide
 * Unbound DNS server
 * Custom tweaks
 * Pihole log to RAM
+* Pihole API brower extensions, mac, and phone apps
 
 
 https://pi-hole.net/
