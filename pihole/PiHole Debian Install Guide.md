@@ -73,3 +73,7 @@ We need to enable SSH access to the OS. During the initial bootup of the OS it w
 SSH is completely open to anyone on the home network. Lets lock it down to only you.
 
 ## 5. Install PiHole
+
+1. In your terminal SSH into the pi: `ssh pi@STATIC_IP`
+1. Download pihole installer: `wget -O basic-install.sh https://install.pi-hole.net`
+1. Install pihole: `sudo bash basic-install.sh`
