@@ -17,17 +17,16 @@ At the end there is an advanced step of installing Unbound on your Pi to run you
 1. Ethernet cable to plug it into your router
 1. Terminal with SSH, Ex. Ubuntu Terminal on Windows 10, Mac, Linux.
 
-WIP!!!
-my notes
-etcher
-ssh file
-router static ip
-ssh config password
-install pihole
-lists
-unbound
-tweaks
-log2ram
+# Work In Progress!!!
+
+Need to add these to the guide
+
+* SSH config for security
+* Pihole install
+* Whitelist and Blacklists
+* Unbound DNS server
+* Custom tweaks
+* Pihole log to RAM
 
 ## 1. Install OS
 
