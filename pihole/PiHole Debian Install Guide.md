@@ -1,23 +1,6 @@
 # Pi Hole Network Wide Ad Blocker
 
-https://pi-hole.net/
-
-**NOTE:** We will be using a headless OS, all configuration will be done through a terminal.
-
-This guide covers the installation of Raspberry Pi OS (previously called Raspbian) to your Raspberry Pi (any model). Then the installation of pihole followed by the setup for pihole blocklists and whitelists.
-
-At the end there is an advanced step of installing Unbound on your Pi to run your own DNS server.
-
-## What you need before you start
-
-1. Raspberry Pi (any model)
-1. Good power cable
-1. Case for the pi is recommended but not required
-1. Recommend a 32GB Micro SD card for longetivity, but 8GB is the minimum
-1. Ethernet cable to plug it into your router
-1. Terminal with SSH, Ex. Ubuntu Terminal on Windows 10, Mac, Linux.
-
-# Work In Progress!!!
+Work in Progress
 
 Need to add these to the guide
 
@@ -27,6 +10,34 @@ Need to add these to the guide
 * Unbound DNS server
 * Custom tweaks
 * Pihole log to RAM
+
+
+https://pi-hole.net/
+
+**NOTE:** We will be using a headless OS, all configuration will be done through a terminal.
+
+This guide covers the installation of Raspberry Pi OS (previously called Raspbian) to your Raspberry Pi (any model). Then the installation of pihole followed by the setup for pihole blocklists and whitelists.
+
+At the end there is an advanced step of installing Unbound on your Pi to run your own DNS server.
+
+Table of Contents
+=================
+
+   * [What you need before you start](#what-you-need-before-you-start)
+   * [1. Install OS](#1-install-os)
+   * [2. Enable SSH](#2-enable-ssh)
+   * [3. Initial boot and Router Static IP](#3-initial-boot-and-router-static-ip)
+   * [4. Lockdown SSH Access (highly recommended but not required)](#4-lockdown-ssh-accesshighly-recommended-but-not-required)
+   * [5. Install PiHole](#5-install-pihole)
+
+Missing steps in guide, coming soon
+
+1. Raspberry Pi (any model)
+1. Good power cable
+1. Case for the pi is recommended but not required
+1. Recommend a 32GB Micro SD card for longetivity, but 8GB is the minimum
+1. Ethernet cable to plug it into your router
+1. Terminal with SSH, Ex. Ubuntu Terminal on Windows 10, Mac, Linux.
 
 ## 1. Install OS
 
@@ -57,7 +68,7 @@ We need to enable SSH access to the OS. During the initial bootup of the OS it w
 1. To verify this change run: `hostname -I` You should see the new static IP
 1. Close the SSH connection, run: `exit`
 
-## 4. Lockdown SSH Access(highly recommended but not required)
+## 4. Lockdown SSH Access (highly recommended but not required)
 
 SSH is completely open to anyone on the home network. Lets lock it down to only you.
 
